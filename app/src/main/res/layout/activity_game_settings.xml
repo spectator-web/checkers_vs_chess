@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Настройки партии"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Режим: 2 игрока (на одном устройстве)\nИгрок 1: Шашки (Черные)\nИгрок 2: Шахматы (Белые)"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:layout_marginBottom="48dp"
+        android:textColor="#555555" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Введите время для Шахмат (сек):"
+        android:layout_marginTop="16dp" />
+
+    <Switch
+        android:id="@+id/swPenalties"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Включить систему штрафов (-20 сек)"
+        android:textSize="16sp"
+        android:checked="true"
+        android:layout_marginBottom="16dp"/>
+
+    <Switch
+        android:id="@+id/swFlipBoard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Авто-поворот доски при ходе"
+        android:textSize="16sp"
+        android:checked="true"
+        android:layout_marginBottom="32dp"/>
+
+    <EditText
+        android:id="@+id/etChessTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Минимум 31"
+        android:inputType="number"
+        android:text="60" />
+
+    <TextView
+        android:id="@+id/tvCheckersTimeInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Время для Шашек: 240 сек (1:4)"
+        android:layout_marginBottom="16dp"
+        android:textColor="#757575" />
+
+    <Button
+        android:id="@+id/btnStartGame"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Начать игру"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:backgroundTint="#4CAF50" />
+
+</LinearLayout>

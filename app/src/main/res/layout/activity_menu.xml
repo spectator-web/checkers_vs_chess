@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Шашки против Шахмат"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="48dp"
+        android:textColor="#333333"
+        android:gravity="center" />
+
+    <Button
+        android:id="@+id/btnSinglePlayer"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Одиночная игра"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnMultiplayer"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Совместная игра"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Настройки"
+        android:textSize="18sp" />
+
+</LinearLayout>
