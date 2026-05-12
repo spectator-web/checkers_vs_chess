@@ -28,8 +28,8 @@
 
     <Button
         android:id="@+id/btnSmallMenu"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:text="@string/close_button"
         android:textSize="14sp"
         android:layout_gravity="start"

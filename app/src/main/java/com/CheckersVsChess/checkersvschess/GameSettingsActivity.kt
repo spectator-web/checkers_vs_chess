@@ -6,7 +6,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Switch // <-- Тот самый забытый импорт
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,10 +16,14 @@ class GameSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game_settings)
 
+        // --- КНОПКА НАЗАД ---
+        findViewById<Button>(R.id.btnBackFromSettings)?.setOnClickListener {
+            finish()
+        }
+
         val etChessTime = findViewById<EditText>(R.id.etChessTime)
         val tvCheckersTimeInfo = findViewById<TextView>(R.id.tvCheckersTimeInfo)
 
-        // Слушатель ввода текста, который на лету умножает время на 4
         etChessTime.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 val chessTime = s.toString().toIntOrNull() ?: 0
@@ -29,7 +33,6 @@ class GameSettingsActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // По кнопке "Начать игру" проверяем время и открываем доску
         findViewById<Button>(R.id.btnStartGame).setOnClickListener {
             val chessTime = etChessTime.text.toString().toIntOrNull() ?: 60
 
@@ -38,8 +41,7 @@ class GameSettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Забираем состояния переключателей с экрана
-            val usePenalties = findViewById<Switch>(R.id.swPenalties).isChecked // <-- Добавили эту строчку
+            val usePenalties = findViewById<Switch>(R.id.swPenalties).isChecked
             val useFlipBoard = findViewById<Switch>(R.id.swFlipBoard).isChecked
 
             val intent = Intent(this, MainActivity::class.java).apply {

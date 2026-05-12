@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center|top"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="32dp">
+
+    <Button
+        android:id="@+id/btnBackFromSingle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="← Назад"
+        android:layout_gravity="start"
+        android:backgroundTint="#9E9E9E" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Одиночная игра"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="24dp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ваша сторона:"
+        android:textStyle="bold"
+        android:textSize="16sp"/>
+    <RadioGroup
+        android:id="@+id/rgSide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <RadioButton
+            android:id="@+id/rbCheckers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Шашки (Черные)"
+            android:checked="true"/>
+        <RadioButton
+            android:id="@+id/rbChess"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Шахматы (Белые)"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Время для Шахмат (сек):"
+        android:textStyle="bold" />
+    <EditText
+        android:id="@+id/etChessTimeSingle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Минимум 31"
+        android:inputType="number"
+        android:text="60" />
+    <TextView
+        android:id="@+id/tvCheckersTimeSingle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Время для Шашек: 240 сек"
+        android:textColor="#757575"
+        android:layout_marginBottom="16dp" />
+
+    <Switch
+        android:id="@+id/swPenaltiesSingle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Система штрафов"
+        android:checked="true"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnStartSingleGame"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Начать бой"
+        android:textSize="20sp"
+        android:backgroundTint="#4CAF50" />
+</LinearLayout>

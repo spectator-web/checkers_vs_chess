@@ -13,16 +13,14 @@
         android:text="Шашки против Шахмат"
         android:textSize="32sp"
         android:textStyle="bold"
-        android:layout_marginBottom="48dp"
-        android:textColor="#333333"
-        android:gravity="center" />
+        android:layout_marginBottom="32dp"
+        android:textColor="#333333" />
 
     <Button
         android:id="@+id/btnSinglePlayer"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:text="Одиночная игра"
-        android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
     <Button
@@ -30,14 +28,29 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:text="Совместная игра"
-        android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
-    <Button
-        android:id="@+id/btnSettings"
+    <Switch
+        android:id="@+id/swGlobalBlueTheme"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="Настройки"
-        android:textSize="18sp" />
+        android:layout_height="wrap_content"
+        android:text="Синяя тема (Мерзость)"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Прочие настройки (в разработке):"
+        android:textColor="#9E9E9E"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnLang"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Язык / Текстуры"
+        android:backgroundTint="#9E9E9E"
+        android:layout_marginBottom="16dp"/>
 
 </LinearLayout>
