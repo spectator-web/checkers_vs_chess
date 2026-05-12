@@ -52,6 +52,30 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Уровень бота:"
+        android:textSize="18sp"
+        android:textStyle="bold"/>
+    <RadioGroup
+        android:id="@+id/rgBotLevel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <RadioButton
+            android:id="@+id/rbBotDumb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Тупой (Рандом, но быстрый)"
+            android:checked="true"/>
+        <RadioButton
+            android:id="@+id/rbBotSmart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Умный (Осторожный Жнец)"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="Время для Шахмат (сек):"
         android:textStyle="bold" />
     <EditText

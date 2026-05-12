@@ -361,4 +361,27 @@ object MoveValidator {
         return isKingInCheck(tempBoard, color)
     }
     private fun isValidPos(r: Int, c: Int) = r in 0..7 && c in 0..7
+    fun hasAnyMoves(board: Array<Array<GamePiece?>>, color: PieceColor): Boolean {
+        for (r in 0..7) {
+            for (c in 0..7) {
+                val piece = board[r][c]
+                if (piece != null && piece.color == color) {
+                    val moves = when (piece) {
+                        is CheckerPiece -> getValidMovesForPiece(board, r, c, color)
+                        is ChessPiece -> {
+                            val raw = getMovesForChessPiece(board, r, c)
+                            // Если это шахматы, отсекаем ходы, подставляющие короля
+                            if (color == PieceColor.WHITE) {
+                                raw.filter { !wouldMoveResultInCheck(board, it, PieceColor.WHITE) }
+                            } else raw
+                        }
+                        else -> emptyList()
+                    }
+                    // Если нашли хотя бы один ход — жить можно!
+                    if (moves.isNotEmpty()) return true
+                }
+            }
+        }
+        return false // Ходов вообще нет
+    }
 }

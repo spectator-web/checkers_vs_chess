@@ -10,7 +10,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.CheckersVsChess.checkersvschess.game.MoveValidator
-import com.CheckersVsChess.checkersvschess.game.PrimitiveBot
+import com.CheckersVsChess.checkersvschess.game.bots.Bot
+import com.CheckersVsChess.checkersvschess.game.bots.PrimitiveBot
+import com.CheckersVsChess.checkersvschess.game.bots.SmartChessBot
+import com.CheckersVsChess.checkersvschess.game.bots.SmartCheckersBot
 import com.CheckersVsChess.checkersvschess.model.*
 
 class MainActivity : AppCompatActivity() {
@@ -29,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     private var isGameOver = false
     private var isSinglePlayer = false
+    private var isSmartBot = false // <--- ТА САМАЯ ПЕРЕМЕННАЯ
     private var humanPlayerColor = PieceColor.BLACK
     private var isPenaltiesEnabled = true
     private var isFlipEnabled = true
@@ -41,7 +45,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // ЧИТАЕМ НАСТРОЙКИ ИЗ ИНТЕНТА
         isSinglePlayer = intent.getBooleanExtra("IS_SINGLE_PLAYER", false)
+        isSmartBot = intent.getBooleanExtra("IS_SMART_BOT", false) // <--- И ЕЕ ЧТЕНИЕ
         val playerIsBlack = intent.getBooleanExtra("PLAYER_IS_BLACK", true)
         humanPlayerColor = if (playerIsBlack) PieceColor.BLACK else PieceColor.WHITE
 
@@ -69,18 +75,18 @@ class MainActivity : AppCompatActivity() {
         drawBoard()
         startTimer()
 
+        // ПЕРВЫЙ ХОД БОТА (Если бот играет за Белых)
         if (isSinglePlayer && currentTurn != humanPlayerColor) {
             executeBotMove()
         }
     }
 
-    // Вспомогательная функция для обновления текста времени
     private fun updateTimerText() {
         if (currentTurn == PieceColor.WHITE) {
-            tvTimer.text = "Ход Шахмат (Белые): $chessTimeLeft сек"
+            tvTimer.text = "Ход Шахмат (Белые): ${if (chessTimeLeft > 0) "$chessTimeLeft сек" else "∞"}"
             tvTimer.setTextColor(Color.parseColor("#333333"))
         } else {
-            tvTimer.text = "Ход Шашек (Черные): $checkersTimeLeft сек"
+            tvTimer.text = "Ход Шашек (Черные): ${if (checkersTimeLeft > 0) "$checkersTimeLeft сек" else "∞"}"
             tvTimer.setTextColor(Color.parseColor("#C62828"))
         }
     }
@@ -88,14 +94,19 @@ class MainActivity : AppCompatActivity() {
     private fun startTimer() {
         timer?.cancel()
 
-        // ПРАВИЛО ПЕРВОГО ХОДА: Если это первый ход стороны, таймер не запускается!
+        // ЧИТ-КОД: Бесконечное время
+        if (chessTimeLeft <= 0 || checkersTimeLeft <= 0) {
+            updateTimerText()
+            return
+        }
+
         if (currentTurn == PieceColor.WHITE && isWhiteFirstMove) {
             updateTimerText()
-            return // Выходим из функции, часы стоят на паузе
+            return
         }
         if (currentTurn == PieceColor.BLACK && isBlackFirstMove) {
             updateTimerText()
-            return // Выходим из функции, часы стоят на паузе
+            return
         }
 
         val timeToCount = if (currentTurn == PieceColor.WHITE) chessTimeLeft else checkersTimeLeft
@@ -280,7 +291,18 @@ class MainActivity : AppCompatActivity() {
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             if (isGameOver) return@postDelayed
 
-            val botMove = PrimitiveBot.getRandomMove(gameBoard, currentTurn)
+            // МАГИЯ АРХИТЕКТУРЫ: Просто выбираем нужную стратегию
+            val activeBot: Bot = if (isSmartBot) {
+                if (currentTurn == PieceColor.WHITE) {
+                    SmartChessBot()       // Умный Жнец (готов)
+                } else {
+                    SmartCheckersBot()    // Умный Шашист (пока под прикрытием тупого)
+                }
+            } else {
+                PrimitiveBot()            // Тупой режим для обоих
+            }
+
+            val botMove = activeBot.getMove(gameBoard, currentTurn)
 
             if (botMove != null) {
                 if (currentTurn == PieceColor.BLACK && botMove.isCapture) {
@@ -306,7 +328,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun passTurn() {
-        // 1. Снимаем флаг бесплатного первого хода для того, КТО ТОЛЬКО ЧТО ПОХОДИЛ
+        // 1. Снимаем флаг бесплатного первого хода
         if (currentTurn == PieceColor.WHITE) {
             isWhiteFirstMove = false
         } else {
@@ -316,23 +338,36 @@ class MainActivity : AppCompatActivity() {
         // 2. Передаем очередь хода оппоненту
         currentTurn = if (currentTurn == PieceColor.WHITE) PieceColor.BLACK else PieceColor.WHITE
 
+        // 3. Проверяем базовые условия победы (съели короля, кончились шашки)
+        val winMessage = gameBoard.checkWinConditions(chessTimeLeft, checkersTimeLeft)
+        if (winMessage != null) {
+            endGame(winMessage)
+            return
+        }
+
+        // 4. КАТАСТРОФА ПРЕДОТВРАЩЕНА: Проверяем, есть ли ходы у текущего игрока
+        if (!MoveValidator.hasAnyMoves(gameBoard.grid, currentTurn)) {
+            if (currentTurn == PieceColor.BLACK) {
+                endGame("У шашек нет ходов! Шашки победили (капкан)!")
+            } else {
+                endGame("У шахмат нет ходов (Мат/Пат)! Шашки победили!")
+            }
+            return
+        }
+
+        // 5. Проверка на шах (даем штраф)
         if (currentTurn == PieceColor.WHITE && MoveValidator.isKingInCheck(gameBoard.grid, PieceColor.WHITE)) {
             applyPenalty(20)
             Toast.makeText(this, "Шах! Штраф -20 секунд белым", Toast.LENGTH_SHORT).show()
         }
 
-        val winMessage = gameBoard.checkWinConditions(chessTimeLeft, checkersTimeLeft)
-        if (winMessage != null) {
-            endGame(winMessage)
-            return
-        } else {
-            startTimer() // Таймер теперь сам разберется, запускаться ему или ждать
-        }
+        startTimer()
 
         selectedPos = null
         currentPossibleMoves = emptyList()
         drawBoard()
 
+        // 6. Вызов бота, если сейчас его очередь
         if (isSinglePlayer && currentTurn != humanPlayerColor) {
             executeBotMove()
         } else {
@@ -343,7 +378,6 @@ class MainActivity : AppCompatActivity() {
     private fun applyPenalty(seconds: Int) {
         if (!isPenaltiesEnabled) return
         chessTimeLeft = (chessTimeLeft - seconds).coerceAtLeast(0)
-        // Сразу обновляем экран, чтобы штраф был виден даже во время паузы таймера
         updateTimerText()
     }
 

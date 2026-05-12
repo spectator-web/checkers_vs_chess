@@ -1,14 +1,13 @@
-package com.CheckersVsChess.checkersvschess.game
+package com.CheckersVsChess.checkersvschess.game.bots
 
+import com.CheckersVsChess.checkersvschess.game.MoveValidator
 import com.CheckersVsChess.checkersvschess.model.*
 
-object PrimitiveBot {
+class PrimitiveBot : Bot { // <-- Теперь это класс, который реализует интерфейс Bot!
 
-    // Бот анализирует доску и возвращает ОДИН ход
-    fun getRandomMove(board: Board, botColor: PieceColor): Move? {
+    override fun getMove(board: Board, botColor: PieceColor): Move? {
         val allValidMoves = mutableListOf<Move>()
 
-        // 1. Собираем АБСОЛЮТНО ВСЕ возможные ходы для всех фигур бота
         for (row in 0..7) {
             for (col in 0..7) {
                 val piece = board.grid[row][col]
@@ -19,7 +18,6 @@ object PrimitiveBot {
                         else -> emptyList()
                     }
 
-                    // 2. Обязательно фильтруем самоубийственные ходы, если бот играет за Шахматы
                     val safeMoves = if (botColor == PieceColor.WHITE) {
                         rawMoves.filter { move -> !MoveValidator.wouldMoveResultInCheck(board.grid, move, PieceColor.WHITE) }
                     } else {
@@ -30,15 +28,11 @@ object PrimitiveBot {
             }
         }
 
-        if (allValidMoves.isEmpty()) return null // Бот проиграл (нет ходов)
+        if (allValidMoves.isEmpty()) return null
 
-        // 3. Логика "Тупого, но жадного": если есть кого съесть — бьем обязательно!
         val captures = allValidMoves.filter { it.isCapture }
-        if (captures.isNotEmpty()) {
-            return captures.random()
-        }
+        if (captures.isNotEmpty()) return captures.random()
 
-        // 4. Если рубить некого, делаем абсолютно случайный ход
         return allValidMoves.random()
     }
 }
