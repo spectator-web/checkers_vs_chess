@@ -5,8 +5,7 @@ import com.CheckersVsChess.checkersvschess.model.*
 
 class SmartChessBot : Bot {
 
-    // Глубина просчета (3 полухода). Идеальный баланс между умом и скоростью (0.1 - 0.5 сек)
-    private val SEARCH_DEPTH = 3
+    private val SEARCH_DEPTH = 4
 
     override fun getMove(board: Board, botColor: PieceColor): Move? {
         val moves = getWhiteMoves(board.grid)
@@ -19,10 +18,9 @@ class SmartChessBot : Bot {
             val simulatedBoard = simulateMove(board.grid, move)
             val eval = minimax(simulatedBoard, SEARCH_DEPTH - 1, Int.MIN_VALUE, Int.MAX_VALUE, false)
 
-            // Легкий шум, чтобы при равных ходах бот не играл по одному шаблону
-            val noise = (0..2).random()
-            if (eval + noise > maxEval) {
-                maxEval = eval + noise
+            // Убрал рандомный шум для тестов, чтобы бот играл максимально жестко и предсказуемо
+            if (eval > maxEval) {
+                maxEval = eval
                 bestMove = move
             }
         }
@@ -32,10 +30,39 @@ class SmartChessBot : Bot {
 
     private fun minimax(grid: Array<Array<GamePiece?>>, depth: Int, alpha: Int, beta: Int, isMaximizing: Boolean): Int {
         val eval = evaluateBoard(grid)
+        if (Math.abs(eval) > 9000000) return eval
 
-        // Базовый случай: дно просчета или кто-то уже победил в симуляции
-        if (depth == 0 || Math.abs(eval) > 900000) {
-            return eval
+        if (depth <= 0) {
+            val captures = getCaptureMovesOnly(grid, isMaximizing)
+
+            if (captures.isEmpty() || depth <= -2) {
+                return eval
+            }
+
+            var a = alpha
+            var b = beta
+
+            if (isMaximizing) {
+                var maxEval = eval
+                for (move in captures) {
+                    val newGrid = simulateMove(grid, move)
+                    val currentEval = minimax(newGrid, depth - 1, a, b, false)
+                    maxEval = maxOf(maxEval, currentEval)
+                    a = maxOf(a, currentEval)
+                    if (b <= a) break
+                }
+                return maxEval
+            } else {
+                var minEval = Int.MAX_VALUE
+                for (move in captures) {
+                    val newGrid = simulateMove(grid, move)
+                    val currentEval = minimax(newGrid, depth - 1, a, b, true)
+                    minEval = minOf(minEval, currentEval)
+                    b = minOf(b, currentEval)
+                    if (b <= a) break
+                }
+                return minEval
+            }
         }
 
         var a = alpha
@@ -44,119 +71,164 @@ class SmartChessBot : Bot {
         if (isMaximizing) {
             var maxEval = Int.MIN_VALUE
             val moves = getWhiteMoves(grid)
-            if (moves.isEmpty()) return -999999 // Поражение белых
+            if (moves.isEmpty()) return -9999999
 
             for (move in moves) {
                 val newGrid = simulateMove(grid, move)
                 val currentEval = minimax(newGrid, depth - 1, a, b, false)
                 maxEval = maxOf(maxEval, currentEval)
                 a = maxOf(a, currentEval)
-                if (b <= a) break // Альфа-бета отсечение
+                if (b <= a) break
             }
             return maxEval
         } else {
             var minEval = Int.MAX_VALUE
             val moves = getBlackMoves(grid)
-            if (moves.isEmpty()) return -999999 // Если у шашек нет ходов - белые проиграли
+            if (moves.isEmpty()) return -9999999
 
             for (move in moves) {
                 val newGrid = simulateMove(grid, move)
                 val currentEval = minimax(newGrid, depth - 1, a, b, true)
                 minEval = minOf(minEval, currentEval)
                 b = minOf(b, currentEval)
-                if (b <= a) break // Альфа-бета отсечение
+                if (b <= a) break
             }
             return minEval
         }
     }
 
-    private fun evaluateBoard(grid: Array<Array<GamePiece?>>): Int {
-        var whiteKingAlive = false
-        var blackPieces = 0
-        var blackKings = 0
-        var blackHasMoves = false
-
-        var whiteMaterial = 0
-        var blackMaterial = 0
-        var stuckBlackCheckersPenalty = 0
-
-        // 1. РАДАР УГРОЗ: Кто из наших под боем прямо сейчас?
-        val blackMoves = getBlackMoves(grid)
-        blackHasMoves = blackMoves.isNotEmpty()
-        val threatenedWhitePieces = blackMoves.flatMap { it.captured }.toSet()
-
+    private fun getDangerMap(grid: Array<Array<GamePiece?>>): HashSet<Position> {
+        val dangerZone = HashSet<Position>()
         for (r in 0..7) {
             for (c in 0..7) {
-                val p = grid[r][c] ?: continue
-
-                if (p.color == PieceColor.WHITE) {
-                    if (p is ChessPiece) {
-                        if (p.type == ChessPieceType.KING) whiteKingAlive = true
-
-                        val pieceValue = when (p.type) {
-                            ChessPieceType.PAWN -> 10
-                            ChessPieceType.KNIGHT, ChessPieceType.BISHOP, ChessPieceType.ROOK, ChessPieceType.MORPHING_BISHOP -> 150
-                            ChessPieceType.QUEEN -> 300
-                            ChessPieceType.KING -> 0
-                        }
-
-                        // Если фигура под боем, вычитаем ее стоимость (штраф за зевок)
-                        // Это делает бота ультра-осторожным
-                        if (threatenedWhitePieces.contains(Position(r, c))) {
-                            whiteMaterial -= pieceValue
-                        } else {
-                            whiteMaterial += pieceValue
-                        }
-
-                        // 2. ПОЗИЦИОННЫЕ БОНУСЫ
-                        val isLightSquare = (r + c) % 2 == 0
-                        if (isLightSquare) whiteMaterial += 20
-
-                        if (p.type == ChessPieceType.KNIGHT && isLightSquare && r in 2..5 && c in 2..5) {
-                            whiteMaterial += 30
-                        }
-
-                        if (p.type in listOf(ChessPieceType.QUEEN, ChessPieceType.ROOK, ChessPieceType.MORPHING_BISHOP)) {
-                            // Мобильность: ладья в углу = 0 бонусов, ладья в центре = много бонусов
-                            val mobility = MoveValidator.getMovesForChessPiece(grid, r, c).size
-                            whiteMaterial += (mobility * 2)
-
-                            if (r > 0 && (c == 0 || c == 7)) whiteMaterial += 15
-                        }
-
-                        if (p.type == ChessPieceType.PAWN) {
-                            whiteMaterial += (r * 5)
-                        }
-                    }
-                } else {
-                    blackPieces++
-                    if (p is CheckerPiece) {
-                        if (p.isKing) {
-                            blackKings++
-                            blackMaterial += 300 // Дамка страшнее Ферзя
-                        } else {
-                            blackMaterial += 50
-                            // 3. СТРАХ ПЕРЕД ДАМКОЙ: Чем ближе шашка к нулю, тем больше штраф белым
-                            blackMaterial += (7 - r) * 10
-                        }
-
-                        // Застрявшая шашка - это хорошо для белых
-                        val moves = MoveValidator.getValidMovesForPiece(grid, r, c, PieceColor.BLACK)
-                        if (moves.isEmpty()) {
-                            stuckBlackCheckersPenalty += 80
+                val p = grid[r][c]
+                if (p is CheckerPiece && p.color == PieceColor.BLACK) {
+                    val moves = MoveValidator.getValidMovesForPiece(grid, r, c, PieceColor.BLACK)
+                    for (move in moves) {
+                        if (move.isCapture) {
+                            dangerZone.addAll(move.captured)
                         }
                     }
                 }
             }
         }
+        return dangerZone
+    }
 
-        // --- КРИТИЧЕСКИЕ ИСХОДЫ ---
-        if (!whiteKingAlive) return -999999
-        if (blackKings >= 2) return -999999
-        if (blackPieces == 0) return 999999
-        if (!blackHasMoves) return -999999
+    private fun getCaptureMovesOnly(grid: Array<Array<GamePiece?>>, isWhite: Boolean): List<Move> {
+        val moves = mutableListOf<Move>()
+        for (r in 0..7) {
+            for (c in 0..7) {
+                val p = grid[r][c] ?: continue
+                if (isWhite && p.color == PieceColor.WHITE && p is ChessPiece) {
+                    val raw = MoveValidator.getMovesForChessPiece(grid, r, c).filter { it.isCapture }
+                    moves.addAll(raw.filter { !MoveValidator.wouldMoveResultInCheck(grid, it, PieceColor.WHITE) })
+                } else if (!isWhite && p.color == PieceColor.BLACK && p is CheckerPiece) {
+                    val raw = MoveValidator.getValidMovesForPiece(grid, r, c, PieceColor.BLACK)
+                    moves.addAll(raw.filter { it.isCapture })
+                }
+            }
+        }
+        return moves
+    }
 
-        return (whiteMaterial - blackMaterial - stuckBlackCheckersPenalty)
+    // --- ИСПРАВЛЕННАЯ ОЦЕНКА ПОЗИЦИИ ---
+    private fun evaluateBoard(grid: Array<Array<GamePiece?>>): Int {
+        var whiteKingAlive = false // ИСПРАВЛЕНИЕ: Теперь мы реально ищем короля!
+        var blackPieces = 0
+        var blackKings = 0
+        var whiteMaterial = 0
+        var blackMaterial = 0
+
+        val dangerMap = getDangerMap(grid)
+
+        for (r in 0..7) {
+            for (c in 0..7) {
+                val p = grid[r][c] ?: continue
+
+                if (p.color == PieceColor.WHITE && p is ChessPiece) {
+                    if (p.type == ChessPieceType.KING) whiteKingAlive = true // <-- ИСПРАВЛЕНО!
+
+                    val baseValue = when (p.type) {
+                        ChessPieceType.PAWN -> 100
+                        ChessPieceType.KNIGHT, ChessPieceType.BISHOP, ChessPieceType.MORPHING_BISHOP -> 3000
+                        ChessPieceType.ROOK -> 5000 // Ладья ценнее легких фигур
+                        ChessPieceType.QUEEN -> 9000
+                        ChessPieceType.KING -> 0
+                    }
+
+                    var pieceEval = baseValue
+
+                    // 1. АБСОЛЮТНАЯ БЕЗОПАСНОСТЬ (Светлые поля и края доски)
+                    val isLightSquare = (r + c) % 2 == 0
+                    val isEdgeSquare = (c == 0 || c == 7)
+
+                    if (isLightSquare || isEdgeSquare) {
+                        pieceEval += 150 // Колоссальный бонус, бот будет стягивать фигуры сюда
+                    } else {
+                        // 2. ЗОНА СМЕРТИ (Темные поля в центре)
+                        // Шашки ходят только тут. Любая фигура здесь — потенциальный труп.
+                        if (p.type != ChessPieceType.PAWN && p.type != ChessPieceType.KING) {
+                            pieceEval -= 150 // Огромный штраф, заставляющий бежать с этих клеток
+                        }
+                    }
+
+                    // 3. РАДАР УГРОЗ
+                    val pos = Position(r, c)
+                    if (dangerMap.contains(pos)) {
+                        // ИСПРАВЛЕНО: Штраф равен (стоимость фигуры - 100).
+                        // Это значит: "Фигура почти мертва (осталось 100 очков), БЕГИ!". 
+                        // Бот предпочтет сбежать (вернув полные 9000 очков), чем быть съеденным (0 очков).
+                        pieceEval -= (baseValue - 100)
+                    }
+
+                    if (p.type == ChessPieceType.PAWN) {
+                        pieceEval += (r * 20)
+                    }
+
+                    whiteMaterial += pieceEval
+
+                } else if (p.color == PieceColor.BLACK && p is CheckerPiece) {
+                    blackPieces++
+                    if (p.isKing) {
+                        blackKings++
+                        blackMaterial += 6000 // Дамка — это смерть для шахмат. Огромный вес!
+                    } else {
+                        var checkerValue = 300
+
+                        // === ИСКЛЮЧЕНИЕ: УГРОЗА ДАМКИ ===
+                        // Чем ближе к дамкам (row 0), тем опаснее шашка.
+                        when (r) {
+                            1 -> checkerValue += 3500 // В шаге от дамки! Ради её убийства бот ПОЖЕРТВУЕТ конем или слоном (3000)
+                            2 -> checkerValue += 1000 // Очень опасно
+                            3 -> checkerValue += 400
+                            else -> checkerValue += ((7 - r) * 30)
+                        }
+
+                        // Структура шашек
+                        var hasSupport = false
+                        if (r < 7) {
+                            if (c > 0 && grid[r + 1][c - 1]?.color == PieceColor.BLACK) hasSupport = true
+                            if (c < 7 && grid[r + 1][c + 1]?.color == PieceColor.BLACK) hasSupport = true
+                        }
+
+                        if (hasSupport) {
+                            checkerValue += 150 // Стена
+                        } else {
+                            checkerValue -= 100 // Одиночка
+                        }
+
+                        blackMaterial += checkerValue
+                    }
+                }
+            }
+        }
+
+        if (!whiteKingAlive) return -9999999
+        if (blackKings >= 2) return -9999999 // Если 2 дамки - бот сдается (твое правило)
+        if (blackPieces == 0) return 9999999
+
+        return (whiteMaterial - blackMaterial)
     }
 
     private fun getWhiteMoves(grid: Array<Array<GamePiece?>>): List<Move> {

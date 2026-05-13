@@ -15,6 +15,11 @@ import com.CheckersVsChess.checkersvschess.game.bots.PrimitiveBot
 import com.CheckersVsChess.checkersvschess.game.bots.SmartChessBot
 import com.CheckersVsChess.checkersvschess.game.bots.SmartCheckersBot
 import com.CheckersVsChess.checkersvschess.model.*
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -288,43 +293,50 @@ class MainActivity : AppCompatActivity() {
     private fun executeBotMove() {
         gridLayout.isEnabled = false
 
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if (isGameOver) return@postDelayed
+        // Запускаем фоновый поток (Dispatchers.Default), чтобы не вешать интерфейс
+        lifecycleScope.launch(Dispatchers.Default) {
+            if (isGameOver) return@launch
 
-            // МАГИЯ АРХИТЕКТУРЫ: Просто выбираем нужную стратегию
+            delay(500) // Небольшая пауза для естественности
+
             val activeBot: Bot = if (isSmartBot) {
                 if (currentTurn == PieceColor.WHITE) {
-                    SmartChessBot()       // Умный Жнец (готов)
+                    SmartChessBot()
                 } else {
-                    SmartCheckersBot()    // Умный Шашист (пока под прикрытием тупого)
+                    SmartCheckersBot()
                 }
             } else {
-                PrimitiveBot()            // Тупой режим для обоих
+                PrimitiveBot()
             }
 
+            // === ТЯЖЕЛОЕ ВЫЧИСЛЕНИЕ (Здесь бот может думать хоть 10 секунд, игра не зависнет) ===
             val botMove = activeBot.getMove(gameBoard, currentTurn)
 
-            if (botMove != null) {
-                if (currentTurn == PieceColor.BLACK && botMove.isCapture) {
-                    for (cap in botMove.captured) {
-                        val deadPiece = gameBoard.grid[cap.row][cap.col]
-                        if (deadPiece is ChessPiece) applyPenalty(deadPiece.type.penalty)
+            // Когда бот придумал ход, возвращаемся в главный поток интерфейса (Dispatchers.Main),
+            // потому что двигать фигурки на экране можно только отсюда
+            withContext(Dispatchers.Main) {
+                if (botMove != null) {
+                    if (currentTurn == PieceColor.BLACK && botMove.isCapture) {
+                        for (cap in botMove.captured) {
+                            val deadPiece = gameBoard.grid[cap.row][cap.col]
+                            if (deadPiece is ChessPiece) applyPenalty(deadPiece.type.penalty)
+                        }
                     }
+
+                    gameBoard.makeMove(botMove)
+
+                    val piece = gameBoard.grid[botMove.toRow][botMove.toCol]
+                    if (piece is ChessPiece && piece.type == ChessPieceType.PAWN && botMove.toRow == 7) {
+                        gameBoard.grid[botMove.toRow][botMove.toCol] = ChessPiece(PieceColor.WHITE, ChessPieceType.QUEEN)
+                    }
+
+                    passTurn()
+                } else {
+                    val winner = if (currentTurn == PieceColor.WHITE) "Шашки" else "Шахматы"
+                    endGame("У противника нет ходов! Победили $winner")
                 }
-
-                gameBoard.makeMove(botMove)
-
-                val piece = gameBoard.grid[botMove.toRow][botMove.toCol]
-                if (piece is ChessPiece && piece.type == ChessPieceType.PAWN && botMove.toRow == 7) {
-                    gameBoard.grid[botMove.toRow][botMove.toCol] = ChessPiece(PieceColor.WHITE, ChessPieceType.QUEEN)
-                }
-
-                passTurn()
-            } else {
-                val winner = if (currentTurn == PieceColor.WHITE) "Шашки" else "Шахматы"
-                endGame("У противника нет ходов! Победили $winner")
             }
-        }, 500)
+        }
     }
 
     private fun passTurn() {

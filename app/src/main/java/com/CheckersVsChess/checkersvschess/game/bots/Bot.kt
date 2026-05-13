@@ -5,6 +5,6 @@ import com.CheckersVsChess.checkersvschess.model.Move
 import com.CheckersVsChess.checkersvschess.model.PieceColor
 
 interface Bot {
-    // Принимает доску и цвет бота, возвращает лучший (или случайный) ход
+    // Добавлен параметр timeLeft
     fun getMove(board: Board, botColor: PieceColor): Move?
 }
