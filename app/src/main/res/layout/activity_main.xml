@@ -1,19 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
 
     <TextView
+        android:id="@+id/tvTimer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="@string/timer_default"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:textColor="#333333" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <GridLayout
+        android:id="@+id/boardGrid"
+        android:layout_width="360dp"
+        android:layout_height="360dp"
+        android:columnCount="8"
+        android:rowCount="8"
+        android:background="#3E2723"
+        android:padding="4dp">
+    </GridLayout>
+
+    <Button
+        android:id="@+id/btnSmallMenu"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:text="@string/close_button"
+        android:textSize="14sp"
+        android:layout_gravity="start"
+        android:backgroundTint="#FF5252"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+    <Button
+        android:id="@+id/btnExitToMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/exit_to_menu"
+        android:visibility="gone"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Шашки против Шахмат"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:textColor="#333333" />
+
+    <Button
+        android:id="@+id/btnSinglePlayer"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Одиночная игра"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnMultiplayer"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Совместная игра"
+        android:layout_marginBottom="16dp" />
+
+    <Switch
+        android:id="@+id/swGlobalBlueTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Синяя тема (Мерзость)"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Прочие настройки (в разработке):"
+        android:textColor="#9E9E9E"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnLang"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Язык / Текстуры"
+        android:backgroundTint="#9E9E9E"
+        android:layout_marginBottom="16dp"/>
+
+</LinearLayout>
