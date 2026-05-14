@@ -6,6 +6,8 @@ import com.CheckersVsChess.checkersvschess.model.*
 class SmartChessBot : Bot {
 
     private val SEARCH_DEPTH = 4
+    private val WIN_SCORE = 99999999
+    private val LOSE_SCORE = -99999999
 
     override fun getMove(board: Board, botColor: PieceColor): Move? {
         val moves = getWhiteMoves(board.grid)
@@ -18,7 +20,6 @@ class SmartChessBot : Bot {
             val simulatedBoard = simulateMove(board.grid, move)
             val eval = minimax(simulatedBoard, SEARCH_DEPTH - 1, Int.MIN_VALUE, Int.MAX_VALUE, false)
 
-            // Убрал рандомный шум для тестов, чтобы бот играл максимально жестко и предсказуемо
             if (eval > maxEval) {
                 maxEval = eval
                 bestMove = move
@@ -30,12 +31,12 @@ class SmartChessBot : Bot {
 
     private fun minimax(grid: Array<Array<GamePiece?>>, depth: Int, alpha: Int, beta: Int, isMaximizing: Boolean): Int {
         val eval = evaluateBoard(grid)
-        if (Math.abs(eval) > 9000000) return eval
+        if (Math.abs(eval) > 90000000) return eval // Досрочный выход при победе/поражении
 
         if (depth <= 0) {
             val captures = getCaptureMovesOnly(grid, isMaximizing)
 
-            if (captures.isEmpty() || depth <= -2) {
+            if (captures.isEmpty() || depth <= -6) {
                 return eval
             }
 
@@ -71,7 +72,7 @@ class SmartChessBot : Bot {
         if (isMaximizing) {
             var maxEval = Int.MIN_VALUE
             val moves = getWhiteMoves(grid)
-            if (moves.isEmpty()) return -9999999
+            if (moves.isEmpty()) return LOSE_SCORE
 
             for (move in moves) {
                 val newGrid = simulateMove(grid, move)
@@ -84,7 +85,7 @@ class SmartChessBot : Bot {
         } else {
             var minEval = Int.MAX_VALUE
             val moves = getBlackMoves(grid)
-            if (moves.isEmpty()) return -9999999
+            if (moves.isEmpty()) return LOSE_SCORE
 
             for (move in moves) {
                 val newGrid = simulateMove(grid, move)
@@ -132,9 +133,8 @@ class SmartChessBot : Bot {
         return moves
     }
 
-    // --- ИСПРАВЛЕННАЯ ОЦЕНКА ПОЗИЦИИ ---
     private fun evaluateBoard(grid: Array<Array<GamePiece?>>): Int {
-        var whiteKingAlive = false // ИСПРАВЛЕНИЕ: Теперь мы реально ищем короля!
+        var whiteKingAlive = false
         var blackPieces = 0
         var blackKings = 0
         var whiteMaterial = 0
@@ -145,45 +145,43 @@ class SmartChessBot : Bot {
         for (r in 0..7) {
             for (c in 0..7) {
                 val p = grid[r][c] ?: continue
+                val pos = Position(r, c)
+
+                val isLightSquare = (r + c) % 2 == 0
 
                 if (p.color == PieceColor.WHITE && p is ChessPiece) {
-                    if (p.type == ChessPieceType.KING) whiteKingAlive = true // <-- ИСПРАВЛЕНО!
 
                     val baseValue = when (p.type) {
-                        ChessPieceType.PAWN -> 100
-                        ChessPieceType.KNIGHT, ChessPieceType.BISHOP, ChessPieceType.MORPHING_BISHOP -> 3000
-                        ChessPieceType.ROOK -> 5000 // Ладья ценнее легких фигур
-                        ChessPieceType.QUEEN -> 9000
-                        ChessPieceType.KING -> 0
+                        ChessPieceType.KING -> 10000000
+                        ChessPieceType.PAWN -> 30000                 // Пешка дешевле шашки! Отдаем на размен.
+                        ChessPieceType.KNIGHT -> 400000
+                        ChessPieceType.BISHOP -> 400000
+                        ChessPieceType.MORPHING_BISHOP -> 400000
+                        ChessPieceType.ROOK -> 600000
+                        ChessPieceType.QUEEN -> 1200000
                     }
+
+                    if (p.type == ChessPieceType.KING) whiteKingAlive = true
 
                     var pieceEval = baseValue
 
-                    // 1. АБСОЛЮТНАЯ БЕЗОПАСНОСТЬ (Светлые поля и края доски)
-                    val isLightSquare = (r + c) % 2 == 0
-                    val isEdgeSquare = (c == 0 || c == 7)
+                    // Умеренный бонус за бункер. Не мешает атаковать.
+                    if (isLightSquare) {
+                        pieceEval += 5000
+                        if (p.type == ChessPieceType.KING) pieceEval += 20000 // Король предпочитает белые клетки
+                    }
 
-                    if (isLightSquare || isEdgeSquare) {
-                        pieceEval += 150 // Колоссальный бонус, бот будет стягивать фигуры сюда
-                    } else {
-                        // 2. ЗОНА СМЕРТИ (Темные поля в центре)
-                        // Шашки ходят только тут. Любая фигура здесь — потенциальный труп.
-                        if (p.type != ChessPieceType.PAWN && p.type != ChessPieceType.KING) {
-                            pieceEval -= 150 // Огромный штраф, заставляющий бежать с этих клеток
+                    // Штрафы за угрозу
+                    if (dangerMap.contains(pos)) {
+                        if (p.type == ChessPieceType.KING) {
+                            pieceEval -= 20000000 // Шах = поражение. Бежим любой ценой.
+                        } else {
+                            pieceEval -= (baseValue - 500) // Фигура списана со счетов
                         }
                     }
 
-                    // 3. РАДАР УГРОЗ
-                    val pos = Position(r, c)
-                    if (dangerMap.contains(pos)) {
-                        // ИСПРАВЛЕНО: Штраф равен (стоимость фигуры - 100).
-                        // Это значит: "Фигура почти мертва (осталось 100 очков), БЕГИ!". 
-                        // Бот предпочтет сбежать (вернув полные 9000 очков), чем быть съеденным (0 очков).
-                        pieceEval -= (baseValue - 100)
-                    }
-
                     if (p.type == ChessPieceType.PAWN) {
-                        pieceEval += (r * 20)
+                        pieceEval += (r * 2500) // Жесткий стимул бежать в Ферзи
                     }
 
                     whiteMaterial += pieceEval
@@ -192,17 +190,15 @@ class SmartChessBot : Bot {
                     blackPieces++
                     if (p.isKing) {
                         blackKings++
-                        blackMaterial += 6000 // Дамка — это смерть для шахмат. Огромный вес!
+                        blackMaterial += 150000 // Дамка
                     } else {
-                        var checkerValue = 300
+                        var checkerValue = 45000 // Обычная шашка дороже пешки (30к). Размен выгоден Белым.
 
-                        // === ИСКЛЮЧЕНИЕ: УГРОЗА ДАМКИ ===
-                        // Чем ближе к дамкам (row 0), тем опаснее шашка.
                         when (r) {
-                            1 -> checkerValue += 3500 // В шаге от дамки! Ради её убийства бот ПОЖЕРТВУЕТ конем или слоном (3000)
-                            2 -> checkerValue += 1000 // Очень опасно
-                            3 -> checkerValue += 400
-                            else -> checkerValue += ((7 - r) * 30)
+                            1 -> checkerValue += 45000 // Пред-дамка (90к). Разменяем 2 пешки, но не Коня!
+                            2 -> checkerValue += 20000
+                            3 -> checkerValue += 10000
+                            else -> checkerValue += ((7 - r) * 1000)
                         }
 
                         // Структура шашек
@@ -213,9 +209,7 @@ class SmartChessBot : Bot {
                         }
 
                         if (hasSupport) {
-                            checkerValue += 150 // Стена
-                        } else {
-                            checkerValue -= 100 // Одиночка
+                            checkerValue += 5000
                         }
 
                         blackMaterial += checkerValue
@@ -224,9 +218,9 @@ class SmartChessBot : Bot {
             }
         }
 
-        if (!whiteKingAlive) return -9999999
-        if (blackKings >= 2) return -9999999 // Если 2 дамки - бот сдается (твое правило)
-        if (blackPieces == 0) return 9999999
+        if (!whiteKingAlive) return LOSE_SCORE
+        if (blackKings >= 2) return LOSE_SCORE
+        if (blackPieces == 0) return WIN_SCORE
 
         return (whiteMaterial - blackMaterial)
     }
